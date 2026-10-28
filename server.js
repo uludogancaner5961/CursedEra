@@ -3,7 +3,11 @@ const express = require('express'), http = require('http'), path = require('path
 const { Server } = require('socket.io');
 const app = express(), srv = http.createServer(app);
 const io = new Server(srv, { cors: { origin: '*' } });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname)));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 const HP = { gojo: 130, sukuna: 150, yuta: 125, yuji: 140 };
 const MAXCE = { gojo: 160, sukuna: 140, yuta: 190, yuji: 110 };
