@@ -1,10 +1,12 @@
-// Cursed Era online sunucusu: odalar, eşleştirme ve hasar doğrulama
 const express = require('express'), http = require('http'), path = require('path');
 const { Server } = require('socket.io');
 const app = express(), srv = http.createServer(app);
 const io = new Server(srv, { cors: { origin: '*' } });
+
+// Tüm statik dosyaları ana dizinden sun
 app.use(express.static(path.join(__dirname)));
 
+// Kök dizine (/) istek geldiğinde doğrudan index.html'i gönder
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
