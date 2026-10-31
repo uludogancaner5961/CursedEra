@@ -11,11 +11,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const HP = { gojo: 130, sukuna: 150, yuta: 125, yuji: 140 };
-const MAXCE = { gojo: 160, sukuna: 140, yuta: 190, yuji: 110 };
+// Taban can degerleri istemcideki CH tablosuyla ayni; HP_MULT istemcideki carpanla (index.html) AYNI olmali
+const HP_MULT = 2;
+const BASE_HP = { gojo: 130, sukuna: 150, yuta: 125, yuji: 140, higuruma: 135, toji: 145, hakari: 150, kashimo: 130, kenjaku: 140 };
+const HP = Object.fromEntries(Object.entries(BASE_HP).map(([k, v]) => [k, Math.round(v * HP_MULT)]));
+const MAXCE = { gojo: 160, sukuna: 140, yuta: 190, yuji: 110, higuruma: 150, toji: 90, hakari: 150, kashimo: 170, kenjaku: 200 };
 // Ulti: Gojo Q (Hollow Purple), Sukuna Q (Dismantle), Yuta R (Rika), Yuji R (Double Black Flash)
 // Istemci olay adlari: 's' = Q yetenegi, 'b' = R yetenegi, 'd' = alan, 'heal' = iyilesme, 'p' = yumruk
-const ULT = { gojo: 's', sukuna: 's', yuta: 'b', yuji: 'b' };
+const ULT = { gojo: 's', sukuna: 's', yuta: 'b', yuji: 'b', higuruma: 's', toji: 's', hakari: 's', kashimo: 's', kenjaku: 's' };   // Q=ulti (Yuta/Yuji: istemcide tuslar yer degistirir, olay adi ayni)
 const ULT_CD = 7500, SLACK = 150;                       // ulti bekleme suresi 7.5 sn (+ ag gecikmesi payi)
 const CD = { s: 700, b: 1100, d: 29500, heal: 5800 };   // normal bekleme sureleri (ms)
 const DOM_MS = 5333;                                     // alan suresi (320 kare)
