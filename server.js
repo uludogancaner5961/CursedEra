@@ -5,7 +5,11 @@ const app = express(), srv = http.createServer(app);
 const io = new Server(srv, { cors: { origin: '*' } });
 app.use(express.static(path.join(__dirname, 'public')));
 
-const HP = { gojo: 180, sukuna: 210, yuta: 175, yuji: 200, higuruma: 190, toji: 190, hakari: 200, kashimo: 185, kenjaku: 175 };
+// Taban can degerleri; HP_MULT istemcideki (index.html) 1.6 carpaniyla AYNI olmali
+const HP_MULT = 1.6;
+const HP_BASE = { gojo: 180, sukuna: 210, yuta: 175, yuji: 200, higuruma: 190, toji: 190, hakari: 200, kashimo: 185, kenjaku: 175 };
+const HP = Object.fromEntries(Object.entries(HP_BASE).map(([k, x]) => [k, Math.round(x * HP_MULT)]));
+const BLK_WIN = 750, BLK_CD = 5000, GUARD_MS = 2500;   // blok penceresi / bekleme / basarili blok sonrasi hasar azaltma
 const MAXCE = { gojo: 160, sukuna: 140, yuta: 190, yuji: 110, higuruma: 150, toji: 100, hakari: 170, kashimo: 150, kenjaku: 180 };
 const DOM_CH = { gojo: 1, sukuna: 1, yuta: 1, yuji: 1, higuruma: 1, hakari: 1, kashimo: 1, kenjaku: 1 };   // Toji'nin alani yok
 const C2 = { gojo: 25, sukuna: 25, yuta: 45, yuji: 35, higuruma: 40, toji: 30, hakari: 40, kashimo: 55, kenjaku: 50 };
@@ -32,6 +36,7 @@ function fresh(r) {
   r.ce = r.ch.map(c => MAXCE[c]); r.ct = [n, n];
   r.last = [{ s: 0, b: 0, d: 0, heal: 0 }, { s: 0, b: 0, d: 0, heal: 0 }];
   r.ult = [0, 0]; r.dom = [0, 0]; r.deny = [0, 0]; r.jp = [0, 0];
+  r.bl = [0, 0]; r.bc = [0, 0]; r.bu = [1, 1]; r.gd = [0, 0];
 }
 // Eylem dogrulama: gecerliyse enerji/sureleri isler ve null doner, degilse neden dondurur
 function check(r, i, t, n) {
@@ -111,8 +116,13 @@ io.on('connection', s => {
   });
   // eylemler (görsel senkron) ve iyileşme doğrulaması
   s.on('act', o => {
-    const r = live(s); if (!r || !o || !['p', 's', 'b', 'd', 'heal', 'dc', 'jp'].includes(o.t)) return;
+    const r = live(s); if (!r || !o || !['p', 's', 'b', 'd', 'heal', 'dc', 'jp', 'blk'].includes(o.t)) return;
     const n = Date.now(); if (n - (s.la || 0) < 50) return; s.la = n;
+    if (o.t === 'blk') {                                           // blok: bagimsiz bekleme, denetim disi (reddedilirse baska eylemi etkilemez)
+      if (r.hp[s.idx] <= 0 || n - r.bc[s.idx] < BLK_CD - SLACK) return;
+      r.bc[s.idx] = n; r.bl[s.idx] = n; r.bu[s.idx] = 0;
+      r.p[1 - s.idx].emit('a', { t: 'blk' }); return;
+    }
     const why = check(r, s.idx, o.t, n);
     if (why) { r.deny[s.idx] = n + 900; s.emit('deny', { t: o.t, why }); return; }   // reddedilen eylem: enerji/sure islenmez
     if (o.t === 'heal') {
@@ -131,8 +141,11 @@ io.on('connection', s => {
     const b = s.bk = Math.min(300, (s.bk === undefined ? 300 : s.bk) + (n - (s.bt || n)) * 0.3); s.bt = n;
     if (b < d) return; s.bk = b - d;
     if (o.m && r.st[i] && r.st[j] && Math.abs(r.st[i].x - r.st[j].x) > 260) return;
+    let bl = 0; const strong = !!o.s;                              // blok: 80 hasar -> 20; guclu saldiri -> minimum
+    if (n - r.bl[j] <= BLK_WIN && !r.bu[j]) { d = Math.max(1, Math.round(d * (strong ? .15 : .25))); r.bu[j] = 1; r.gd[j] = n + GUARD_MS; bl = 1; }
+    else if (r.gd[j] > n) d = Math.max(1, Math.round(d * (strong ? .3 : .35)));
     r.hp[j] = Math.max(0, r.hp[j] - d);
-    r.p[j].emit('hurt', { d, kb: Math.max(-14, Math.min(14, +o.kb || 0)), bf: o.bf ? 1 : 0, st: Math.max(0, Math.min(90, +o.st || 0)) });
+    r.p[j].emit('hurt', { bl, d, kb: Math.max(-14, Math.min(14, +o.kb || 0)), bf: o.bf ? 1 : 0, st: Math.max(0, Math.min(90, +o.st || 0)) });
     sendHp(r);
     if (r.hp[j] <= 0) endRound(r, i);
   });
