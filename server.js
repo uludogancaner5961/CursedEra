@@ -1,9 +1,8 @@
+// Cursed Era online sunucusu: odalar, eşleştirme ve hasar doğrulama
 const express = require('express'), http = require('http'), path = require('path');
 const { Server } = require('socket.io');
 const app = express(), srv = http.createServer(app);
 const io = new Server(srv, { cors: { origin: '*' } });
-
-// Tüm statik dosyaları ana dizinden sun
 app.use(express.static(path.join(__dirname)));
 
 // Kök dizine (/) istek geldiğinde doğrudan index.html'i gönder
@@ -18,12 +17,12 @@ const BLK_WIN = 750, BLK_CD = 5000, GUARD_MS = 2500;   // blok penceresi / bekle
 const MAXCE = { gojo: 160, sukuna: 140, yuta: 190, yuji: 110, higuruma: 150, toji: 100, hakari: 170, kashimo: 150, kenjaku: 180 };
 const DOM_CH = { gojo: 1, sukuna: 1, yuta: 1, yuji: 1, higuruma: 1, hakari: 1, kashimo: 1, kenjaku: 1 };   // Toji'nin alani yok
 const C2 = { gojo: 25, sukuna: 25, yuta: 45, yuji: 35, higuruma: 40, toji: 30, hakari: 40, kashimo: 55, kenjaku: 50 };
-const SIGN_MS = 2000;                                    // alan acma el hareketi suresi
+const SIGN_MS = 1400;                                    // alan acma el hareketi suresi
 // Ulti: Gojo Q (Hollow Purple), Sukuna Q (Dismantle), Yuta R (Rika), Yuji R (Double Black Flash)
 // Istemci olay adlari: 's' = Q yetenegi, 'b' = R yetenegi, 'd' = alan, 'heal' = iyilesme, 'p' = yumruk
 const ULT = { gojo: 's', sukuna: 's', yuta: 'b', yuji: 'b', higuruma: 'b', toji: 'b', hakari: 'b', kashimo: 'b', kenjaku: 'b' };
 const ULT_CD = 7500, SLACK = 150;                       // ulti bekleme suresi 7.5 sn (+ ag gecikmesi payi)
-const CD = { s: 700, b: 1100, d: 29500, heal: 5800 };   // normal bekleme sureleri (ms)
+const CD = { s: 700, b: 1100, d: 14500, heal: 5800 };   // normal bekleme sureleri (ms)
 const DOM_MS = 5333;                                     // alan suresi (320 kare)
 const REGEN = 0.021;                                     // CE/ms (0.35 kare basina)
 const cost = (c, t) => (t === 's' ? 35 : t === 'd' ? 75 : t === 'heal' ? 40 : t === 'b' ? (C2[c] || 25) : 0);
@@ -59,7 +58,7 @@ function check(r, i, t, n) {
   r.ce[i] = Math.min(MAXCE[c], r.ce[i] + (n - r.ct[i]) * REGEN); r.ct[i] = n;
   if (t === 'd' && !DOM_CH[c]) return 'cd';
   const active = n < Math.max(r.dom[0], r.dom[1]) - SLACK;        // el hareketi + alan suresi boyunca
-  if (t === 'd' && active) return 'domain';                        // ayni anda tek alan
+  if (t === 'd' && n < r.dom[i] - SLACK) return 'domain';          // kendi alanin aktifken tekrar acilmaz; rakibin alani engel degil (Domain Clash)
   if (ULT[c] === t) {
     if (active) return 'domain';                                   // herhangi bir alan aktifken ulti yok
     if (n - r.ult[i] < ULT_CD - SLACK) return 'ult';
