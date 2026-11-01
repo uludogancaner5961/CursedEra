@@ -1,12 +1,15 @@
-// Cursed Era online sunucusu: odalar, eşleştirme ve hasar doğrulama
 const express = require('express'), http = require('http'), path = require('path');
 const { Server } = require('socket.io');
 const app = express(), srv = http.createServer(app);
 const io = new Server(srv, { cors: { origin: '*' } });
 
-// DÜZELTME: Dosyaların doğrudan ana dizinde okunabilmesi için yol güncellendi
+// Tüm statik dosyaları ana dizinden sun
 app.use(express.static(path.join(__dirname)));
 
+// Kök dizine (/) istek geldiğinde doğrudan index.html'i gönder
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 // Taban can degerleri; HP_MULT istemcideki (index.html) 1.6 carpaniyla AYNI olmali
 const HP_MULT = 1.6;
 const HP_BASE = { gojo: 180, sukuna: 210, yuta: 175, yuji: 200, higuruma: 190, toji: 190, hakari: 200, kashimo: 185, kenjaku: 175 };
