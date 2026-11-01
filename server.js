@@ -3,7 +3,9 @@ const express = require('express'), http = require('http'), path = require('path
 const { Server } = require('socket.io');
 const app = express(), srv = http.createServer(app);
 const io = new Server(srv, { cors: { origin: '*' } });
-app.use(express.static(path.join(__dirname, 'public')));
+
+// DÜZELTME: Dosyaların doğrudan ana dizinde okunabilmesi için yol güncellendi
+app.use(express.static(path.join(__dirname)));
 
 // Taban can degerleri; HP_MULT istemcideki (index.html) 1.6 carpaniyla AYNI olmali
 const HP_MULT = 1.6;
