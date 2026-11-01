@@ -9,6 +9,7 @@ app.use(express.static(path.join(__dirname)));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 // Taban can degerleri; HP_MULT istemcideki (index.html) 1.6 carpaniyla AYNI olmali
 const HP_MULT = 1.6;
 const HP_BASE = { gojo: 180, sukuna: 210, yuta: 175, yuji: 200, higuruma: 190, toji: 190, hakari: 200, kashimo: 185, kenjaku: 175 };
